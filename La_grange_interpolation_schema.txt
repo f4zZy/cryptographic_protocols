@@ -1,0 +1,81 @@
+#Micha³ Plesiñski 	WCY19KY2S1
+
+
+from __future__ import division
+from __future__ import print_function
+import random
+
+
+def parametry():
+    # (n, k)
+    n = 23 ; k = 15
+    #Podaj secret M
+    M = 1234
+
+    #generowana liczba pierwsza wiêksza od liczby mo¿liwych cieni i wiêksza od wartosci tajemnicy
+    p = next_prime(randint(max([k , n]) ,2**16))
+    return k,n , M, p
+
+#y = f(x)
+# funkcja obliczajaca wartosc y dla okreslonej wartosc x
+def f_x(coefficients, x, p):
+    value_polymonial = 0
+    temp = 1
+    #iteracja po liscie ze wspolczynnikami wielomianu i mnozenie przez argumenty funckji
+    for a in coefficients:
+        value_polymonial = (value_polymonial + ( a * temp))
+        temp *= x
+        value_polymonial %= p
+    return value_polymonial
+
+#wyznaczanie cieni 
+def generacja_cieni(s, k, n, p):
+    xp = p - 1
+    shares = []
+    function_coeff = []
+    function_coeff.append(s)
+    for i in range(k-1):
+        function_coeff.append(randint(2, xp))
+    for i in range(1, n + 1):
+        shares.append((i, f_x(function_coeff, i, p)))
+    return shares
+
+#interpolacja Lagrange'a
+def schemat_lagrange(g, r, p):
+    x = 0
+    lagrange_temp = []
+    lagrange_temp2 = []
+    lagrange_list_value = []
+    lagrange_value = 0
+    def f(u):
+        y = 1
+        for v in u:
+            y *= v
+        return y
+    for i in range(len(g)):
+        list_shares = list(g)
+        element_pop = list_shares.pop(i)
+        lagrange_temp.append(f(x - i for i in list_shares))
+        lagrange_temp2.append(f(element_pop - j for j in list_shares))
+    lagrange_y = f(lagrange_temp2)
+    for i in range(len(g)):
+        inv = xgcd(lagrange_temp2[i], p)[1]
+        m = ((lagrange_temp[i] * lagrange_y * r[i]) % p) * inv
+        lagrange_list_value.append(m)
+    lagrange_value = sum(lagrange_list_value)
+    lr = xgcd(lagrange_y, p)[1]
+    l = ((lagrange_value * lr) + p) % p
+    return l
+
+#odzyskanie sekretu
+def odzyskanie_tajemnicy(parties, k, p):
+    secret1, shares_secret = zip(*parties)
+    return schemat_lagrange(secret1, shares_secret, p)
+
+def main():
+    k,n,s,p = parametry()
+    n = generacja_cieni(s, k, n, p)
+    print("Sekret: ",s)
+    print("Wygenerowane Cienie:", [i for i in n ])
+    print("Odzyskany sekret: ",odzyskanie_tajemnicy(n[:k], k, p))
+main()

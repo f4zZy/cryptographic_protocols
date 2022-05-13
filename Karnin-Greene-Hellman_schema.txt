@@ -1,0 +1,79 @@
+#Micha³ Plesiñski WCY19KY2S1 
+
+from __future__ import print_function
+
+
+def generacja_cieni():
+    print(" Generacja Cieni ")
+    #dzia³ania wykonujemy w ciele Fq^m
+    #potega q (q^m)
+    #parametry schematu k i n
+    q = 13 ; m = 70 ; k = 10 ; n = 12
+    #cia³o Fqm
+    FQ.<a> = GF(q**m)
+    #wybierany jest element pierwotny ciala Fq^m
+    primitive_elem = FQ.primitive_element()
+    #przez M oznaczono tajemnice reprezentowana jako element ciala Fq^m
+    M = FQ.random_element()
+    print("M: ", M)
+    nm = n - 1 ; km = k - 1
+    #Zaufana strona wybiera lososo elementy a1, a2, a3, a4, ..., a_k-1, wszystkie naleza do  ciala Fqm
+    ai = []
+    i = 1
+    while i < k:
+        ai.append(FQ.random_element())
+        i = i + 1
+    #zaufana strona wyznacza n cieni s_i (i =1, ..., n) w nastepujacy sposob:
+    #pierwsza macierz S z jedna kolumna zawiera elementy s1, s2, s3, .. , sn
+    #macierz S = (1, a1, a1^2, ... : 1, a2, a2^2, ... : ... ) * (M, a1, a2, ..., a_k-1) -> S = M1 * M_shares
+    M1 = zero_matrix(FQ, n, k)
+    M_shares = zero_matrix(FQ, k, 1)
+    S = zero_matrix(FQ, k, 1)
+    # tworzenie macierzy M1 = (1, a1, a1^2, ... : 1, a2, a2^2, ... : ... )
+    i = 0
+    while i < nm:
+        M1[i,0] = 1
+        i = i + 1
+    M1[nm, km] = 1
+    for i in range(0, nm):
+        for j in range(1,k):
+            M1[i,j] = primitive_elem^((i+1)*j)
+    # tworzenie macierzy M_shares = (M, a1, a2, ..., a_k-1)
+    i = 1
+    M_shares[0,0] = M
+    for i in range(1,k):
+        M_shares[i,0] = ai[i-1]
+    # wyznaczanie macierzy S = S = M1 * M_shares poprzez pomnozenie macierzy M1 i M_shares
+    S = M1 * M_shares
+    return S, M_shares, k, n, q, m, primitive_elem
+
+
+#odtwarzanie tajemnicy
+def odtwarzanie_tajemnicy(S, k, n, q, m, primitive_elem):
+    FQ.<a> = GF(q**m)
+    nm = n - 1 ; km = k - 1
+    #uczestnicy i_1, i_2, i_3, ..., i_k wyznaczaj¹ macierz
+    D = zero_matrix(FQ, k, k)
+    i = 0
+    while i < k:
+        D[i,0] = 1
+        i = i + 1
+    i = 0
+    if n == k:
+        D[nm, km] = 1
+        D[nm, 0] = 0
+        for i in range(0, km):
+            for j in range(1,k):
+                D[i,j] = primitive_elem^((i+1)*j)
+    else:
+        for i in range(0, k):
+            for j in range(1, k):
+                D[i, j] = primitive_elem^((i+1)*j)
+    secret = D.inverse() * S[0:k]
+    return secret
+
+
+S, M2, k, n, q, m, primitive_elem = generacja_cieni()
+secret = odtwarzanie_tajemnicy(S, k, n, q, m, primitive_elem)
+if secret == M2:
+    print ("M odyskane = ", secret[0])
