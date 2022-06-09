@@ -1,0 +1,77 @@
+from __future__ import print_function
+from __future__ import division
+
+#Michał Plesiński WCY20KY1S1
+
+#Opis protokolu generacji
+def protocol(m, G, p):
+    #cialo FP
+    FP = GF(p)
+    
+    print("generowanie klucza prywatnego (x), klucz prywatny x ma byc wzglednie pierwsze z p-1")
+    x = randint(2, p - 1)
+    while True:
+        if gcd(x, (p - 1)) == 1:
+            break
+        x = randint(2, p - 1)
+    print("generowanie klucza publicznego (X)")
+    X = FP(G^x)
+    
+    #uzytkownik A wyznacza podpis
+    print("uzytkownik A wyznacza podpis")
+    z = FP(m^x)
+    
+    #uzytkownik B wybiera dwie liczby losowe a i b  < p
+    print("Uzytkownik B wybiera dwie losowe liczby a i b < p")
+    A = randint(2,p-1) ; B = randint(2,p-1)
+    
+    #Bob oblicza zaciemnienie 
+    ma = FP(m^A) ; gb = FP(G^B)
+    c = FP(ma * gb)
+    print("Uzytkownik B przesyła obliczone zaciemnienie do uzytkownika A", c)
+    
+    
+    q = randint(2,p-1)
+    gq = FP(G^q)
+    
+    #s1 i s2 -> B
+    s1_A_B = FP(c * gq) ; s2_A_B = FP(s1_A_B^x)
+    print("Uzytkownik A oblicza s1 i s2 i wysyla do B", s1_A_B, s2_A_B)
+    print("Uzytkownik B przesyła do A wartosci a i b")
+   
+    
+    #obliczanie sklaodwych s z daszkiem i s 2 z daszkiem w celu sprawdzenia poprawnosci podpisu
+    print("Obliczanie składowych s z daszkiem")
+    print("Czy podpis jest poprawny ?")
+    s1_2_g = FP(G^q) ; c = FP(c)
+    s1_A_B_d = FP(c * s1_2_g)
+    s2_A_B_d = FP( (z^A) * ( X^((B + q)) ))
+    if (s1_A_B == s1_A_B_d) and (s2_A_B == s2_A_B_d):
+        print("Podpis poprawny")
+    else:
+        print("Podpis nie jest poprawny")
+
+#protokol niezaprzeczalnego podpisu
+def check_udeniable_signature(bits, message):
+    #znana publicznie liczba pierwsza p
+    #liczba pierwwsza p jako charakterystyka ciala Fp
+    prime_number_to_generate_field = previous_prime(2**bits)
+    FP = GF(prime_number_to_generate_field)
+    #wiadomosc jako element ciala
+    m = FP(message)
+    
+    #generowanie elementu pierwotnego G ciała Fp
+    G = FP.random_element()
+    while True:
+        if G.is_primitive_root():
+            break
+        G = FP.random_element()
+    protocol(m, G, prime_number_to_generate_field)
+
+#parametry wej:
+#licznosc ciala w bitach (b)
+bits = 16
+#Podaj wiadomosc (liczba calkowita)
+message = 283
+#protokol podpisu niezaprzeczalnego
+check_udeniable_signature(bits, message)
